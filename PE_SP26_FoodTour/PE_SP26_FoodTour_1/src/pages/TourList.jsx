@@ -10,11 +10,11 @@ import {
   Container,
 } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCategories } from '../api/categories';
-import { searchTour, deleteTourById } from '../api/foodTourApi';
-import DeleteModal from '../components/DeleteModal';
-import Pagination from '../components/Paginantion';
+import { getCategories } from '../api/categoriesApi';
 import Header from '../components/Header';
+import Pagination from '../components/Pagination';
+import DeleteModal from '../components/DeleteModal';
+import { deleteTourById, searchTour } from '../api/tourApi';
 
 const PAGE_SIZE = 5;
 
@@ -38,8 +38,9 @@ function TourList() {
   const [filterName, setFilterName] = useState('');
 
   const [showModal, setShowModal] = useState(false);
-  const [shoeToDelete, setShoeToDelete] = useState(null);
+  const [tourToDelete, setTourToDelete] = useState(null);
 
+  //fix
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -90,22 +91,22 @@ function TourList() {
   };
 
   const handleFilter = () => {
-    const catObj = categories.find(c => String(c.categoryId) === String(selectedCategory));
+    const catObj = categories.find(c => String(c.categoryName) === String(selectedCategory));
     setFilterCategory(catObj ? catObj.categoryName : '');
     setFilterName(tourName);
     setCurrentPage(1);
   };
 
-  const handleDeleteClick = (shoe) => {
-    setShoeToDelete(shoe);
+  const handleDeleteClick = (tour) => {
+    setTourToDelete(tour);  
     setSuccessMsg('');
     setShowModal(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (!shoeToDelete) return;
+    if (!tourToDelete) return;
     try {
-      await deleteTourById(shoeToDelete.tourId);
+      await deleteTourById(tourToDelete.tourId);
       setShowModal(false);
       setSuccessMsg('Deleted successfully');
       fetchTour(currentPage);
@@ -152,8 +153,8 @@ function TourList() {
             >
               <option value=""></option>
               {categories.map((cat) => (
-                <option key={cat.categoryId} value={cat.categoryId}>
-                  {cat.categoryName}
+                <option key={cat.id} value={cat.id}>
+                  {cat.categoryName || cat.name}
                 </option>
               ))}
             </Form.Select>
@@ -180,7 +181,7 @@ function TourList() {
             </Button>
           </Col>
           <Col xs="auto">
-            <Button id="btnAddNew" variant="secondary" size="sm" onClick={() => navigate('/foodtour/add')}>
+            <Button id="btnAddNew" variant="secondary" size="sm" onClick={() => navigate('/tour/add')}>
               Add New
             </Button>
           </Col>
@@ -217,7 +218,7 @@ function TourList() {
                   <tr key={tour.tourId}>
                     <td>{startRecord + index}</td>
                     <td>{tour.tourName}</td>
-                    <td>{tour.category?.categoryName || tour.categoryName || ''}</td>
+                    <td>{tour.category?.name || tour.categoryName || ''}</td>
                     <td>{tour.price}</td>
                     <td>{tour.duration}</td>
                     <td>{tour.departureAt}</td>
@@ -233,17 +234,17 @@ function TourList() {
                       </Button>
                       {' | '}
                       <Link
-                        id={`btnEdit-${tour.tourId}`}
-                        to={`/foodtour/edit/${tour.tourId}`}
+                        id={`btnView-${tour.tourId}`}
+                        to={`/tour/view/${tour.tourId}`}
                       >
-                        Edit
+                        View
                       </Link>
                       {' | '}
                       <Link
-                        id={`btnView-${tour.tourId}`}
-                        to={`/foodtour/${tour.tourId}`}
+                        id={`btnEdit-${tour.tourId}`}
+                        to={`/tour/edit/${tour.tourId}`}
                       >
-                        View
+                        Edit
                       </Link>
                     </td>
                   </tr>
@@ -269,7 +270,7 @@ function TourList() {
 
       <DeleteModal
         show={showModal}
-        tourName={shoeToDelete?.tourName}
+        tourName={tourToDelete?.tourName}
         onConfirm={handleConfirmDelete}
         onClose={() => setShowModal(false)}
       />

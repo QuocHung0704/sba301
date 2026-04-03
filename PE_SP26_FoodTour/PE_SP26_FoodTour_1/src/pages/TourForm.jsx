@@ -13,9 +13,9 @@ import {
   searchTour,
   updateTour,
   getTourById,
-} from '../api/foodTourApi';
+} from '../api/tourApi';
 
-import { getCategories } from '../api/categories';
+import { getCategories } from '../api/categoriesApi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -34,7 +34,6 @@ function TourForm() {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -60,9 +59,9 @@ function TourForm() {
           setForm({
             name: s.tourName || '',
             price: String(s.price || ''),
-            duration: String(s.duration || ''),
+            duration: String (s.duration || ''),
             departureAt: s.departureAt || '',
-            categoryId: s.categoryId || (matchedCat ? Number(matchedCat.categoryId) : ''),
+            categoryId: matchedCat ? Number(matchedCat.categoryId) : '',
           });
         } catch (err) {
           setSubmitError('Failed to load tour data');
@@ -73,10 +72,10 @@ function TourForm() {
   }, [id, isEdit]);
 
   const isValidDate = (str) => {
-    const strSafe = String(str);
+    if (!str) return false;
     const regex = /^\d{2}\/\d{2}\/\d{4}$/;
-    if (!strSafe || !regex.test(strSafe)) return false;
-    const [day, month, year] = strSafe.split('/').map(Number);
+    if (!regex.test(str)) return false;
+    const [day, month, year] = str.split('/').map(Number);
     const date = new Date(year, month - 1, day);
     return (
       date.getFullYear() === year &&
@@ -89,12 +88,12 @@ function TourForm() {
     const newErrors = {};
 
     if (!form.name.trim()) {
-      newErrors.name = 'Tours name is required.';
+      newErrors.name = 'Tour Name is required.';
     } else if (form.name.length > 100) {
-      newErrors.name = 'Tour name must be at most 100 characters.';
+      newErrors.name = 'Tour Name must be at most 100 characters.';
     }
 
-    if (!String(form.price).trim()) {
+    if (!form.price.trim()) {
       newErrors.price = 'Price is required.';
     } else if (isNaN(form.price)) {
       newErrors.price = 'Price must be a number.';
@@ -105,18 +104,19 @@ function TourForm() {
       }
     }
 
-    if (!String(form.duration).trim()) {
-      newErrors.duration = 'Duration is required.';
-    } else if (isNaN(form.duration)) {
-      newErrors.duration = 'Duration must be a number.';
-    } else {
-      const durationNum = Number(form.duration);
-      if (durationNum <= 0 || durationNum >= 10000) {
-        newErrors.duration = 'Duration must be greater than 0 and less than 24.';
-      }
+    if (!form.duration.trim()) {
+        newErrors.duration = 'Duration is required.';
+      } else if (isNaN(form.duration)) {
+        newErrors.duration = 'Duration must be a number.';
+      } else {
+        const durationNum = Number(form.duration);
+        if (durationNum <= 0 || durationNum >= 10000) {
+          newErrors.duration = 'Duration must be greater than 0 and less than 10000.';
+        }
     }
 
-    if (!String(form.departureAt || '').trim()) {
+
+    if (!form.departureAt.trim()) {
       newErrors.departureAt = 'Departure date is required.';
     } else if (!isValidDate(form.departureAt)) {
       newErrors.departureAt = 'Departure date must be in dd/MM/yyyy format.';
@@ -155,7 +155,7 @@ function TourForm() {
     };
 
     try {
-      const searchRes = await searchTour({ name: payload.tourName });
+      const searchRes = await searchTour({ name: payload.name });
       const existing = searchRes.data.content || searchRes.data;
       if (Array.isArray(existing)) {
         const isDuplicate = existing.some(
@@ -172,7 +172,7 @@ function TourForm() {
       console.error('Check duplicate failed', err);
     }
 
-    const handleSave = async () => {
+    try {
       if (isEdit) {
         await updateTour(id, payload);
         setSuccessMsg('Updated tour successfully');
@@ -181,10 +181,6 @@ function TourForm() {
         setSuccessMsg('Created new tour successfully');
       }
       setTimeout(() => navigate('/'), 1200);
-    };
-
-    try {
-      await handleSave();
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
       setSubmitError('Save failed: ' + msg);
@@ -333,6 +329,7 @@ function TourForm() {
           </Row>
         </Form>
       </div>
+
       <Footer />
     </Container>
   );
